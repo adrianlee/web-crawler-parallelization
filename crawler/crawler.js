@@ -5,39 +5,55 @@ var url = require('url'),
 function linkScanner(body, callback) {
     var link_array = [];
 
+    // parse url
+    // var parsed_url = url.parse(link);
+
     link_array.push("http://adrianlee.ca/");
 
     callback(link_array);
 }
 
-function crawl(link, callback) {
-    var graph_json = {};
-
-    // parse url
-    var parsed_url = url.parse(link);
-
+function getBody(link, callback) {
+    // Send GET request to link.
     var options = {
         url: link
     };
 
     request.get(options, function (error, response, body) {
-        if (response.statusCode == 200) {
+        if (error) {
+            callback(error);
+        }
+
+        if (response && response.statusCode == 200) {
             // Scan links
             console.log("Scanning links from " + link);
-            linkScanner(body, function (results) {
-                console.log(results);
-            });
+            callback(null, body);
         } else {
             // Log response
             console.log("Response " + response.statusCode + " from " + link)
         }
     });
+}
 
-    graph_json.node = {
-        url: link
-    };
+function crawl(link, callback) {
+    var graph_json = {};
 
-    callback(graph_json);
+    getBody(link, function (error, body) {
+        if (error) {
+            console.log("Something went wrong: " + error);
+        }
+
+        linkScanner(body, function (results) {
+            console.log(results);
+
+            graph_json.node = {
+                url: link
+            };
+
+            callback(graph_json);
+        });
+    });
+
 }
 
 

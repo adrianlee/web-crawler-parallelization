@@ -9,6 +9,7 @@
     "express": "*",
     "hbs": "*",
     "hiredis": "*",
-    "redis": "*"
+    "redis": "*",
+    "request": "*"
   }
 }

@@ -2,7 +2,26 @@ var express = require('express'),
     http = require('http'),
     path = require('path'),
     config = require('../config'),
-    hbs = require('hbs');
+    hbs = require('hbs'),
+    redis = require("redis"),
+    redis_client = redis.createClient()
+    util = require("util");
+
+redis_client.on("connect", function () {
+    console.log("Connected to Redis Server");
+});
+
+redis_client.on("error", function (err) {
+    console.log("Error " + err);
+});
+
+redis_client.on("message", function (channel, message) {
+    console.log("channel " + channel + ": " + message);
+});
+
+redis_client.on("ready", function () {
+    redis_client.subscribe("hello");
+});
 
 var app = express();
 

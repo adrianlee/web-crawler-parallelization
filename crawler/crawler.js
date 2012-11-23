@@ -1,7 +1,23 @@
 var url = require('url'),
+    path = require('path'),
     request = require('request'),
     cheerio = require('cheerio'),
-    config = require('../config');
+    config = require('../config'),
+    redis = require("redis"),
+    redis_client = redis.createClient();
+
+redis_client.on("connect", function () {
+    console.log("Connected to Redis Server");
+});
+
+redis_client.on("error", function (err) {
+    console.log("Error " + err);
+});
+
+redis_client.on("ready", function () {
+    redis_client.publish("hello", "world");
+});
+
 
 var start_link = "http://adrianlee.ca";
 var start_link = "http://hksn.ca";
@@ -21,8 +37,12 @@ function linkScanner(body, callback) {
 
     for (i = 0; i < tag_a.length; i++) {
         if (results.length < config.max_children) {
-            if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
-                        results.push(tag_a[i].attribs.href);
+            if (tag_a[i].attribs.href) {
+                if (validateLink(tag_a[i].attribs.href)) {
+                    console.log("publish " + tag_a[i].attribs.href);
+                    redis_client.publish("hello", tag_a[i].attribs.href);
+                    results.push(tag_a[i].attribs.href);
+                }
             }
         }
     }
@@ -31,8 +51,10 @@ function linkScanner(body, callback) {
 }
 
 function validateLink(link) {
-    var valid = false,
+    var valid,
         parsed_url = url.parse(link);
+
+    valid = false;
 
     /* Example Outputs */
 
@@ -69,7 +91,7 @@ function validateLink(link) {
 
     { hash: '#cite_note-27', href: '#cite_note-27' }
     */
-
+    // console.log("Validating " + link);
     if (parsed_url) {
         if (config.allow_internal_links) {
             // Local links have href == path
@@ -98,10 +120,21 @@ function validateLink(link) {
             }
         }
 
+        // Check for anchor
         if (parsed_url.hash == parsed_url.href) {
-            valid == false;
+            valid = false;
+        }
+
+        // Check for filenames
+        console.log(parsed_url.path);
+        console.log(path.extname(parsed_url.path));
+        if (parsed_url.path && path.extname(parsed_url.path)) {
+            console.log("found " + path.extname(parsed_url.path));
+            valid = false;
         }
     }
+
+    console.log(valid + " " + link);
 
     return valid;
 }
@@ -140,7 +173,7 @@ function crawl(link, callback, temp) {
     // Get body html
     getBody(link, function (error, body) {
         if (error) {
-            console.log("Something went wrong: " + error);
+            console.log(error);
         }
 
         // Scan links
@@ -156,7 +189,6 @@ function crawl(link, callback, temp) {
             callback(graph_json, temp);
         });
     });
-
 }
 
 
@@ -167,11 +199,12 @@ crawl(start_link, function(graph_json) {
     // console.log(graph_json);
 
     for (i = 0; i < graph_json.children.length; i++) {
-        crawl("http://en.wikipedia.org" + graph_json.children[i], function (json, temp) {
+        crawl("http://en.wikipedia.com" + graph_json.children[i], function (json, temp) {
             graph_json.children[temp] = json;
             counter++;
             if (counter >= graph_json.children.length) {
                 console.log(graph_json);
+                redis_client.publish("foo", "inside", redis.print);
             }
         }, i);
     }

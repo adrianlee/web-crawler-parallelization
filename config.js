@@ -9,6 +9,7 @@ module.exports = {
 
     max_children: 2,
 
+    // For wikipedia sites
     wiki_bodyContent_only: true
 
 };

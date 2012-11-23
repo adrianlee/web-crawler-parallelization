@@ -43,6 +43,9 @@ redis_client2.on("message", function (channel, message) {
     try {
         response_body = JSON.parse(message);
         console.log(response_body.url);
+        crawl(response_body.url, function(graph_json) {
+            console.log(graph_json);
+        });
     } catch(e) {
         console.log(e);
     }

@@ -8,6 +8,7 @@ var express = require('express'),
     hbs = require('hbs'),
     redis = require("redis"),
     redis_client = redis.createClient(),
+    redis_client2 = redis.createClient(),
     config = require('../config');
 
 
@@ -28,7 +29,7 @@ redis_client.on("message", function (channel, message) {
 });
 
 redis_client.on("ready", function () {
-    redis_client.subscribe("hello");
+    redis_client.subscribe("data");
 });
 
 
@@ -79,6 +80,16 @@ hbs.registerHelper('block', function(name) {
 ////////////////////////////////////////////////
 app.get('/', function(req, res) {
     res.render('index', { title: 'ECSE420 Web Crawler Visualization' });
+});
+
+app.post('/start', function(req, res) {
+    console.log(req.body);
+    try {
+        redis_client2.publish("instruction", JSON.stringify(req.body));
+    } catch(e) {
+        console.log(e);
+    }
+    res.send(200);
 });
 
 ////////////////////////////////////////////////

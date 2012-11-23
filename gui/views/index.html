@@ -19,6 +19,11 @@ path.link {
 
 </style>
 
+<p>
+  <button id="go" class="btn btn-success" type="button">Start</button>
+  <input id="link" class="span6" value="http://en.wikipedia.org.wiki/Nintendo"></link>
+</p>
+
 <div id="chart"></div>
 
 {{#extend "scripts"}}
@@ -191,6 +196,21 @@ function click(d) {
 var socket = io.connect("http://localhost");
 socket.on('data', function (data) {
   console.log(data);
+});
+
+$("#go").click(function() {
+    // console.log("POST: /start");
+    var textArea = $("#link").val();
+
+    $.ajax({
+        type: "POST",
+        url: "/start",
+        data: {url : textArea}
+    }).done(function() {
+
+    }).fail(function(jqXHR, textStatus) {
+
+    });
 });
 </script>
 

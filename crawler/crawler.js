@@ -4,6 +4,7 @@ var url = require('url'),
     cheerio = require('cheerio'),
     redis = require("redis"),
     redis_client = redis.createClient(),
+    redis_client2 = redis.createClient(),
     config = require('../config');
 
 var start_link = "http://adrianlee.ca";
@@ -23,7 +24,32 @@ redis_client.on("error", function (err) {
 });
 
 redis_client.on("ready", function () {
-    // redis_client.publish("hello", "world");
+    // redis_client.publish("data", "world");
+    // redis_client.subscribe("instruction");
+});
+
+redis_client2.on("connect", function () {
+    console.log("Connected to Redis Server");
+});
+
+redis_client2.on("error", function (err) {
+    console.log("Error " + err);
+});
+
+redis_client2.on("message", function (channel, message) {
+    var response_body;
+
+    console.log("channel " + channel + ": " + message);
+    try {
+        response_body = JSON.parse(message);
+        console.log(response_body.url);
+    } catch(e) {
+        console.log(e);
+    }
+});
+
+redis_client2.on("ready", function () {
+    redis_client2.subscribe("instruction");
 });
 
 
@@ -50,7 +76,7 @@ function linkScanner(body, callback) {
         if (results.length < config.max_children) {
             if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
                 // console.log("publish " + tag_a[i].attribs.href);
-                redis_client.publish("hello", tag_a[i].attribs.href);
+                redis_client.publish("data", tag_a[i].attribs.href);
                 results.push(tag_a[i].attribs.href);
             }
         }
@@ -215,7 +241,7 @@ crawl(start_link, function(graph_json) {
             counter++;
             if (counter >= graph_json.children.length) {
                 console.log(graph_json);
-                redis_client.publish("foo", "inside", redis.print);
+                // redis_client.publish("data", "inside", redis.print);
             }
         }, i);
     }

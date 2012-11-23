@@ -1,5 +1,8 @@
 <style type="text/css">
 
+#chart {
+  /*height: 1000px;*/
+}
 .node circle {
   cursor: pointer;
   fill: #fff;
@@ -32,9 +35,9 @@ path.link {
 
 var margin = {top: 20, right: 120, bottom: 20, left: 30},
     width = 1280 - margin.right - margin.left,
-    height = 800 - margin.top - margin.bottom,
+    height = document.height,
     i = 0,
-    duration = 500,
+    duration = 0,
     root;
 
 var tree = d3.layout.tree()
@@ -196,6 +199,8 @@ function click(d) {
 var socket = io.connect("http://localhost");
 socket.on('data', function (data) {
   console.log(data);
+  root.children.push({name: data});
+  update(root);
 });
 
 $("#go").click(function() {

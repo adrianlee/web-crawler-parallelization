@@ -7,29 +7,29 @@ var express = require('express'),
     io = require('socket.io').listen(server),
     hbs = require('hbs'),
     redis = require("redis"),
-    redis_client = redis.createClient(),
-    redis_client2 = redis.createClient(),
+    redis_subscriber = redis.createClient(),
+    redis_publisher = redis.createClient(),
     config = require('../config');
 
 
 ////////////////////////////////////////////////
 // Redis Configuration
 ////////////////////////////////////////////////
-redis_client.on("connect", function () {
+redis_subscriber.on("connect", function () {
     console.log("Connected to Redis Server");
 });
 
-redis_client.on("error", function (err) {
+redis_subscriber.on("error", function (err) {
     console.log("Error " + err);
 });
 
-redis_client.on("message", function (channel, message) {
+redis_subscriber.on("message", function (channel, message) {
     console.log("channel " + channel + ": " + message);
     io.sockets.emit('data', message);
 });
 
-redis_client.on("ready", function () {
-    redis_client.subscribe("data");
+redis_subscriber.on("ready", function () {
+    redis_subscriber.subscribe("data");
 });
 
 
@@ -85,7 +85,7 @@ app.get('/', function(req, res) {
 app.post('/start', function(req, res) {
     console.log(req.body);
     try {
-        redis_client2.publish("instruction", JSON.stringify(req.body));
+        redis_publisher.publish("instruction", JSON.stringify(req.body));
     } catch(e) {
         console.log(e);
     }

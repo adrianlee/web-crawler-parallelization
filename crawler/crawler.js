@@ -3,8 +3,8 @@ var url = require('url'),
     request = require('request'),
     cheerio = require('cheerio'),
     redis = require("redis"),
-    redis_client = redis.createClient(),
-    redis_client2 = redis.createClient(),
+    redis_publisher = redis.createClient(),
+    redis_subscriber = redis.createClient(),
     config = require('../config');
 
 var start_link = "http://adrianlee.ca";
@@ -15,28 +15,28 @@ var start_link = "http://en.wikipedia.org/wiki/Nintendo";
 ////////////////////////////////////////////////
 // Redis Configuration
 ////////////////////////////////////////////////
-redis_client.on("connect", function () {
+redis_publisher.on("connect", function () {
     console.log("Connected to Redis Server");
 });
 
-redis_client.on("error", function (err) {
+redis_publisher.on("error", function (err) {
     console.log("Error " + err);
 });
 
-redis_client.on("ready", function () {
-    // redis_client.publish("data", "world");
-    // redis_client.subscribe("instruction");
+redis_publisher.on("ready", function () {
+    // redis_publisher.publish("data", "world");
+    // redis_publisher.subscribe("instruction");
 });
 
-redis_client2.on("connect", function () {
+redis_subscriber.on("connect", function () {
     console.log("Connected to Redis Server");
 });
 
-redis_client2.on("error", function (err) {
+redis_subscriber.on("error", function (err) {
     console.log("Error " + err);
 });
 
-redis_client2.on("message", function (channel, message) {
+redis_subscriber.on("message", function (channel, message) {
     var response_body;
 
     console.log("channel " + channel + ": " + message);
@@ -51,8 +51,8 @@ redis_client2.on("message", function (channel, message) {
     }
 });
 
-redis_client2.on("ready", function () {
-    redis_client2.subscribe("instruction");
+redis_subscriber.on("ready", function () {
+    redis_subscriber.subscribe("instruction");
 });
 
 
@@ -79,7 +79,7 @@ function linkScanner(body, callback) {
         if (results.length < config.max_children) {
             if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
                 // console.log("publish " + tag_a[i].attribs.href);
-                redis_client.publish("data", tag_a[i].attribs.href);
+                redis_publisher.publish("data", tag_a[i].attribs.href);
                 results.push(tag_a[i].attribs.href);
             }
         }
@@ -87,7 +87,6 @@ function linkScanner(body, callback) {
 
     callback(results);
 }
-
 
 function validateLink(link) {
     var valid,
@@ -232,6 +231,8 @@ function crawl(link, callback, temp) {
 ////////////////////////////////////////////////
 // Init
 ////////////////////////////////////////////////
+/*
+
 crawl(start_link, function(graph_json) {
     var i,
         counter = 0;
@@ -249,3 +250,5 @@ crawl(start_link, function(graph_json) {
         }, i);
     }
 }, null);
+
+*/

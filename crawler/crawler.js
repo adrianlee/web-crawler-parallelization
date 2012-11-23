@@ -1,14 +1,26 @@
 var url = require('url'),
-    request = require('request');
+    request = require('request'),
+    cheerio = require('cheerio');
 
 
 function linkScanner(body, callback) {
-    var link_array = [];
+    var link_array = [],
+        $ = cheerio.load(body),
+        i,
+        tag_a;
 
-    // parse url
-    // var parsed_url = url.parse(link);
+    tag_a = $("a");
 
-    link_array.push("http://adrianlee.ca/");
+    console.log(tag_a.length + " links parsed");
+
+    for (i = 0; i < tag_a.length; i++) {
+        // console.log(tag_a[i].attribs.href);
+
+        // parse url
+        // var parsed_url = url.parse(link);
+
+        link_array.push(tag_a[i].attribs.href);
+    }
 
     callback(link_array);
 }
@@ -44,13 +56,11 @@ function crawl(link, callback) {
         }
 
         linkScanner(body, function (results) {
-            console.log(results);
-
             graph_json.node = {
                 url: link
             };
 
-            callback(graph_json);
+            callback(results);
         });
     });
 

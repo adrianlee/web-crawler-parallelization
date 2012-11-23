@@ -2,10 +2,18 @@ var url = require('url'),
     path = require('path'),
     request = require('request'),
     cheerio = require('cheerio'),
-    config = require('../config'),
     redis = require("redis"),
-    redis_client = redis.createClient();
+    redis_client = redis.createClient(),
+    config = require('../config');
 
+var start_link = "http://adrianlee.ca";
+var start_link = "http://hksn.ca";
+var start_link = "http://en.wikipedia.org/wiki/Nintendo";
+
+
+////////////////////////////////////////////////
+// Redis Configuration
+////////////////////////////////////////////////
 redis_client.on("connect", function () {
     console.log("Connected to Redis Server");
 });
@@ -15,15 +23,13 @@ redis_client.on("error", function (err) {
 });
 
 redis_client.on("ready", function () {
-    redis_client.publish("hello", "world");
+    // redis_client.publish("hello", "world");
 });
 
 
-var start_link = "http://adrianlee.ca";
-var start_link = "http://hksn.ca";
-var start_link = "http://en.wikipedia.org/wiki/Nintendo";
-
-
+////////////////////////////////////////////////
+// Crawler Methods
+////////////////////////////////////////////////
 function linkScanner(body, callback) {
     var results = [],
         $ = cheerio.load(body),
@@ -31,24 +37,28 @@ function linkScanner(body, callback) {
         tag_a,
         counter;
 
+    // If we are parsing Wikipedia. Just scan within #bodyContent
+    if (config.wiki_bodyContent_only) {
+        $ = cheerio.load($("#bodyContent").html());
+    }
+
     tag_a = $("a");
 
     console.log(tag_a.length + " links parsed");
 
     for (i = 0; i < tag_a.length; i++) {
         if (results.length < config.max_children) {
-            if (tag_a[i].attribs.href) {
-                if (validateLink(tag_a[i].attribs.href)) {
-                    console.log("publish " + tag_a[i].attribs.href);
-                    redis_client.publish("hello", tag_a[i].attribs.href);
-                    results.push(tag_a[i].attribs.href);
-                }
+            if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
+                // console.log("publish " + tag_a[i].attribs.href);
+                redis_client.publish("hello", tag_a[i].attribs.href);
+                results.push(tag_a[i].attribs.href);
             }
         }
     }
 
     callback(results);
 }
+
 
 function validateLink(link) {
     var valid,
@@ -91,6 +101,7 @@ function validateLink(link) {
 
     { hash: '#cite_note-27', href: '#cite_note-27' }
     */
+
     // console.log("Validating " + link);
     if (parsed_url) {
         if (config.allow_internal_links) {
@@ -126,18 +137,15 @@ function validateLink(link) {
         }
 
         // Check for filenames
-        console.log(parsed_url.path);
-        console.log(path.extname(parsed_url.path));
         if (parsed_url.path && path.extname(parsed_url.path)) {
-            console.log("found " + path.extname(parsed_url.path));
+            // console.log("found " + path.extname(parsed_url.path));
             valid = false;
         }
     }
 
-    console.log(valid + " " + link);
-
     return valid;
 }
+
 
 function getBody(link, callback) {
     // Send GET request to link.
@@ -192,6 +200,9 @@ function crawl(link, callback, temp) {
 }
 
 
+////////////////////////////////////////////////
+// Init
+////////////////////////////////////////////////
 crawl(start_link, function(graph_json) {
     var i,
         counter = 0;
@@ -209,5 +220,3 @@ crawl(start_link, function(graph_json) {
         }, i);
     }
 }, null);
-
-

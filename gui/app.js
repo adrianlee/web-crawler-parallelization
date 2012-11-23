@@ -1,12 +1,19 @@
 var express = require('express'),
-    http = require('http'),
     path = require('path'),
-    config = require('../config'),
+    util = require('util'),
+    http = require('http'),
+    app = express(),
+    server = http.createServer(app),
+    io = require('socket.io').listen(server),
     hbs = require('hbs'),
     redis = require("redis"),
-    redis_client = redis.createClient()
-    util = require("util");
+    redis_client = redis.createClient(),
+    config = require('../config');
 
+
+////////////////////////////////////////////////
+// Redis Configuration
+////////////////////////////////////////////////
 redis_client.on("connect", function () {
     console.log("Connected to Redis Server");
 });
@@ -17,32 +24,32 @@ redis_client.on("error", function (err) {
 
 redis_client.on("message", function (channel, message) {
     console.log("channel " + channel + ": " + message);
+    io.sockets.emit('data', message);
 });
 
 redis_client.on("ready", function () {
     redis_client.subscribe("hello");
 });
 
-var app = express();
 
 ////////////////////////////////////////////////
 // Express Configuration
 ////////////////////////////////////////////////
 app.configure(function(){
-  app.set('port', config.guiPort || 8080);
-  app.set('views', __dirname + '/views');
-  app.set('view engine', 'html');
-  app.engine('html', hbs.__express);
-  app.use(express.favicon());
-  app.use(express.logger('dev'));
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(app.router);
-  app.use(express.static(path.join(__dirname, 'public')));
+    app.set('port', config.guiPort || 8080);
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'html');
+    app.engine('html', hbs.__express);
+    app.use(express.favicon());
+    app.use(express.logger('dev'));
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(app.router);
+    app.use(express.static(path.join(__dirname, 'public')));
 });
 
 app.configure('development', function(){
-  app.use(express.errorHandler());
+    app.use(express.errorHandler());
 });
 
 ////////////////////////////////////////////////
@@ -71,12 +78,12 @@ hbs.registerHelper('block', function(name) {
 // Router
 ////////////////////////////////////////////////
 app.get('/', function(req, res) {
-  res.render('index', { title: 'ECSE420 Web Crawler Visualization' });
+    res.render('index', { title: 'ECSE420 Web Crawler Visualization' });
 });
 
 ////////////////////////////////////////////////
 // HTTP Server
 ////////////////////////////////////////////////
-http.createServer(app).listen(app.get('port'), function(){
-  console.log("Express server listening on port " + app.get('port'));
+server.listen(app.get('port'), function(){
+    console.log("Express server listening on port " + app.get('port'));
 });

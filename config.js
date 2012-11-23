@@ -7,6 +7,8 @@ module.exports = {
     allow_external_links: false,
     allow_internal_links: true,
 
-    max_children: 3
+    max_children: 2,
+
+    wiki_bodyContent_only: true
 
 };

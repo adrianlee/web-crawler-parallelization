@@ -52,7 +52,7 @@ hbs.registerHelper('block', function(name) {
 // Router
 ////////////////////////////////////////////////
 app.get('/', function(req, res) {
-  res.render('index', { title: 'Web Crawler Graph' });
+  res.render('index', { title: 'ECSE420 Web Crawler Visualization' });
 });
 
 ////////////////////////////////////////////////

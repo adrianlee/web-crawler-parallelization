@@ -113,15 +113,21 @@ function getBody(link, callback) {
     };
 
     request.get(options, function (error, response, body) {
+        var status = 0;
+
         if (error) {
             callback(error);
         }
 
-        if (response && response.statusCode == 200) {
+        if (response && response.statusCode) {
+            status = 200;
+        }
+
+        if (status == 200) {
             callback(null, body);
         } else {
             // Log response
-            console.log("Response " + response.statusCode + " from " + link)
+            callback("Response " + status + " from " + link);
         }
     });
 }

@@ -9,22 +9,25 @@ var start_link = "http://en.wikipedia.org/wiki/Nintendo";
 
 
 function linkScanner(body, callback) {
-    var link_array = [],
+    var results = [],
         $ = cheerio.load(body),
         i,
-        tag_a;
+        tag_a,
+        counter;
 
     tag_a = $("a");
 
     console.log(tag_a.length + " links parsed");
 
     for (i = 0; i < tag_a.length; i++) {
-        if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
-            link_array.push(tag_a[i].attribs.href);
+        if (results.length < config.max_children) {
+            if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
+                        results.push(tag_a[i].attribs.href);
+            }
         }
     }
 
-    callback(link_array);
+    callback(results);
 }
 
 function validateLink(link) {
@@ -115,8 +118,6 @@ function getBody(link, callback) {
         }
 
         if (response && response.statusCode == 200) {
-            // Scan links
-            console.log("Scanning links from " + link);
             callback(null, body);
         } else {
             // Log response
@@ -125,16 +126,19 @@ function getBody(link, callback) {
     });
 }
 
-function crawl(link, callback) {
+function crawl(link, callback, temp) {
     var graph_json = {},
         time_start = new Date().getTime(),
         time_end;
 
+    // Get body html
     getBody(link, function (error, body) {
         if (error) {
             console.log("Something went wrong: " + error);
         }
 
+        // Scan links
+        console.log("Scanning links from " + link);
         linkScanner(body, function (results) {
             graph_json = {
                 url: link,
@@ -143,7 +147,7 @@ function crawl(link, callback) {
                 children: results
             };
 
-            callback(graph_json);
+            callback(graph_json, temp);
         });
     });
 
@@ -151,7 +155,20 @@ function crawl(link, callback) {
 
 
 crawl(start_link, function(graph_json) {
-    console.log(graph_json);
-});
+    var i,
+        counter = 0;
+
+    // console.log(graph_json);
+
+    for (i = 0; i < graph_json.children.length; i++) {
+        crawl("http://en.wikipedia.org" + graph_json.children[i], function (json, temp) {
+            graph_json.children[temp] = json;
+            counter++;
+            if (counter >= graph_json.children.length) {
+                console.log(graph_json);
+            }
+        }, i);
+    }
+}, null);
 
 

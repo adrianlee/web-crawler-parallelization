@@ -11,6 +11,7 @@
     "hiredis": "*",
     "redis": "*",
     "request": "*",
-    "socket.io": "*"
+    "socket.io": "*",
+    "cheerio": "*"
   }
 }

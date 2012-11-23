@@ -80,10 +80,11 @@ d3.json("flare2.json", function(json) {
 });
 
 function update(source) {
-  console.log(source);
   // Compute the new tree layout.
+  console.log(root);
   var nodes = tree.nodes(root).reverse();
-  console.log(nodes);
+  // console.log(nodes);
+
 
   // Normalize for fixed-depth.
   nodes.forEach(function(d) { d.y = d.depth * 180; });

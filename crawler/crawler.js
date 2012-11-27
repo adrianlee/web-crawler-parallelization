@@ -13,23 +13,22 @@ var start_link = "http://en.wikipedia.org/wiki/Nintendo";
 
 
 ////////////////////////////////////////////////
-// Redis Configuration
+// Redis Configuration - Publisher
 ////////////////////////////////////////////////
 redis_publisher.on("connect", function () {
-    console.log("Connected to Redis Server");
+    console.log("Connected to Redis Server - Publisher");
 });
 
 redis_publisher.on("error", function (err) {
     console.log("Error " + err);
 });
 
-redis_publisher.on("ready", function () {
-    // redis_publisher.publish("data", "world");
-    // redis_publisher.subscribe("instruction");
-});
 
+////////////////////////////////////////////////
+// Redis Configuration - Subscriber
+////////////////////////////////////////////////
 redis_subscriber.on("connect", function () {
-    console.log("Connected to Redis Server");
+    console.log("Connected to Redis Server - Subscriber");
 });
 
 redis_subscriber.on("error", function (err) {
@@ -43,7 +42,7 @@ redis_subscriber.on("message", function (channel, message) {
     try {
         response_body = JSON.parse(message);
         console.log(response_body.url);
-        crawl(response_body.url, function(graph_json) {
+        crawl(response_body, function(graph_json) {
             console.log(graph_json);
         });
     } catch(e) {
@@ -175,11 +174,13 @@ function validateLink(link) {
 }
 
 
-function getBody(link, callback) {
+function getBody(opts, callback) {
     // Send GET request to link.
     var options = {
-        url: link
+        url: opts.url
     };
+
+    console.log(opts);
 
     request.get(options, function (error, response, body) {
         var status = 0;
@@ -201,22 +202,23 @@ function getBody(link, callback) {
     });
 }
 
-function crawl(link, callback, temp) {
+function crawl(opts, callback, temp) {
     var graph_json = {},
         time_start = new Date().getTime(),
         time_end;
 
     // Get body html
-    getBody(link, function (error, body) {
+    getBody(opts, function (error, body) {
         if (error) {
             console.log(error);
         }
 
         // Scan links
-        console.log("Scanning links from " + link);
+        console.log("Scanning links from " + opts.url);
         linkScanner(body, function (results) {
             graph_json = {
-                url: link,
+                url: opts.url,
+                depth: opts.depth,
                 time_start: time_start,
                 time_end: new Date().getTime(),
                 children: results
@@ -231,24 +233,23 @@ function crawl(link, callback, temp) {
 ////////////////////////////////////////////////
 // Init
 ////////////////////////////////////////////////
-/*
 
-crawl(start_link, function(graph_json) {
-    var i,
-        counter = 0;
 
-    // console.log(graph_json);
+// crawl(start_link, function(graph_json) {
+//     var i,
+//         counter = 0;
 
-    for (i = 0; i < graph_json.children.length; i++) {
-        crawl("http://en.wikipedia.com" + graph_json.children[i], function (json, temp) {
-            graph_json.children[temp] = json;
-            counter++;
-            if (counter >= graph_json.children.length) {
-                console.log(graph_json);
-                // redis_client.publish("data", "inside", redis.print);
-            }
-        }, i);
-    }
-}, null);
+//     // console.log(graph_json);
 
-*/
+//     for (i = 0; i < graph_json.children.length; i++) {
+//         crawl("http://en.wikipedia.com" + graph_json.children[i], function (json, temp) {
+//             graph_json.children[temp] = json;
+//             counter++;
+//             if (counter >= graph_json.children.length) {
+//                 console.log(graph_json);
+//                 // redis_client.publish("data", "inside", redis.print);
+//             }
+//         }, i);
+//     }
+// }, null);
+

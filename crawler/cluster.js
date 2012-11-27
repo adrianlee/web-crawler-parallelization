@@ -35,5 +35,5 @@ if (cluster.isMaster) {
     console.log(cluster.worker.id  + ": " + msg);
   });
 
-  console.log("Worker #" + cluster.worker.id + " Started");
+  console.log("Worker started on CPU " + cluster.worker.id);
 }

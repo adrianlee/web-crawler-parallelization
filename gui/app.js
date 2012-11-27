@@ -9,14 +9,15 @@ var express = require('express'),
     redis = require("redis"),
     redis_subscriber = redis.createClient(),
     redis_publisher = redis.createClient(),
-    config = require('../config');
+    config = require('../config'),
+    crypto = require('crypto');
 
 
 ////////////////////////////////////////////////
 // Redis Configuration
 ////////////////////////////////////////////////
 redis_subscriber.on("connect", function () {
-    console.log("Connected to Redis Server");
+    console.log("Connected to Redis Server - Subscriber");
 });
 
 redis_subscriber.on("error", function (err) {
@@ -90,6 +91,17 @@ app.post('/start', function(req, res) {
         console.log(e);
     }
     res.send(200);
+});
+
+app.get('/generator/:links', function(req, res) {
+    var i,
+        body = "";
+
+    for (i=0; i < parseInt(req.params.links); i++) {
+        body += "<a href=\"/generator/" + req.params.links + "/\">link</a></br>";
+    }
+
+    res.send(200, body);
 });
 
 ////////////////////////////////////////////////

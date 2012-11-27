@@ -69,27 +69,27 @@ var vis = d3.select("#chart").append("svg")
 //   update(root);
 // });
 
-root = {
-  name: "root",
-  children: [
-    {
-      name: "Adrian",
-      children: [
-        {
-          name: "Joshua"
-        },
-        {
-          name: "Charlotte"
-        }
-      ]
-    },
-    {
-      name: "Jessie",
-      children: [
-      ]
-    }
-  ]
-};
+// root = {
+//   name: "root",
+//   children: [
+//     {
+//       name: "Adrian",
+//       children: [
+//         {
+//           name: "Joshua"
+//         },
+//         {
+//           name: "Charlotte"
+//         }
+//       ]
+//     },
+//     {
+//       name: "Jessie",
+//       children: [
+//       ]
+//     }
+//   ]
+// };
 
 update(root);
 
@@ -207,10 +207,21 @@ $("#go").click(function() {
     // console.log("POST: /start");
     var textArea = $("#link").val();
 
+    root = {
+      url: textArea,
+      name: textArea,
+      depth: 0
+    };
+
+    update(root);
+
     $.ajax({
         type: "POST",
         url: "/start",
-        data: {url : textArea}
+        data: {
+          url: textArea,
+          depth: 0
+        }
     }).done(function() {
 
     }).fail(function(jqXHR, textStatus) {

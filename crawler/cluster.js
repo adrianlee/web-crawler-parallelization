@@ -6,9 +6,14 @@ var numCPUs = require('os').cpus().length;
 var worker = [];
 
 if (cluster.isMaster) {
+  function messageHandler(msg) {
+    console.log("master: " + msg);
+  }
+
   // Fork workers.
   for (var i = 0; i < numCPUs; i++) {
     cluster.fork();
+    cluster.workers[i+1].on('message', messageHandler)
   }
 
   console.log(cluster.workers[4].send("hello"));
@@ -27,7 +32,7 @@ if (cluster.isMaster) {
 
   process.on('message', function(msg) {
     process.send(msg);
-    console.log(cluster.worker.id  + " " + msg);
+    console.log(cluster.worker.id  + ": " + msg);
   });
 
   console.log("Worker #" + cluster.worker.id + " Started");

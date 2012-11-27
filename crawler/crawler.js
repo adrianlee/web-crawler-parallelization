@@ -2,63 +2,16 @@ var url = require('url'),
     path = require('path'),
     request = require('request'),
     cheerio = require('cheerio'),
-    redis = require("redis"),
-    redis_publisher = redis.createClient(),
-    redis_subscriber = redis.createClient(),
     config = require('../config');
 
 var start_link = "http://adrianlee.ca";
 var start_link = "http://hksn.ca";
 var start_link = "http://en.wikipedia.org/wiki/Nintendo";
 
-
-////////////////////////////////////////////////
-// Redis Configuration - Publisher
-////////////////////////////////////////////////
-redis_publisher.on("connect", function () {
-    console.log("Connected to Redis Server - Publisher");
-});
-
-redis_publisher.on("error", function (err) {
-    console.log("Error " + err);
-});
-
-
-////////////////////////////////////////////////
-// Redis Configuration - Subscriber
-////////////////////////////////////////////////
-redis_subscriber.on("connect", function () {
-    console.log("Connected to Redis Server - Subscriber");
-});
-
-redis_subscriber.on("error", function (err) {
-    console.log("Error " + err);
-});
-
-redis_subscriber.on("message", function (channel, message) {
-    var response_body;
-
-    console.log("channel " + channel + ": " + message);
-    try {
-        response_body = JSON.parse(message);
-        console.log(response_body.url);
-        crawl(response_body, function(graph_json) {
-            console.log(graph_json);
-        });
-    } catch(e) {
-        console.log(e);
-    }
-});
-
-redis_subscriber.on("ready", function () {
-    redis_subscriber.subscribe("instruction");
-});
-
-
 ////////////////////////////////////////////////
 // Crawler Methods
 ////////////////////////////////////////////////
-function linkScanner(body, callback) {
+function linkScanner(body, parentUrl, callback) {
     var results = [],
         $ = cheerio.load(body),
         i,
@@ -78,8 +31,15 @@ function linkScanner(body, callback) {
         if (results.length < config.max_children) {
             if (tag_a[i].attribs.href && validateLink(tag_a[i].attribs.href)) {
                 // console.log("publish " + tag_a[i].attribs.href);
-                redis_publisher.publish("data", tag_a[i].attribs.href);
-                results.push(tag_a[i].attribs.href);
+                // redis_publisher.publish("data", tag_a[i].attribs.href);
+                var checkInternal = url.parse(tag_a[i].attribs.href);
+
+                if (!checkInternal.protocol && config.allow_internal_links) {
+                    console.log(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
+                    results.push(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
+                } else {
+                    results.push(tag_a[i].attribs.href);
+                }
             }
         }
     }
@@ -205,7 +165,8 @@ function getBody(opts, callback) {
 function crawl(opts, callback, temp) {
     var graph_json = {},
         time_start = new Date().getTime(),
-        time_end;
+        time_end,
+        parsed_opts_url;
 
     // Get body html
     getBody(opts, function (error, body) {
@@ -215,7 +176,10 @@ function crawl(opts, callback, temp) {
 
         // Scan links
         console.log("Scanning links from " + opts.url);
-        linkScanner(body, function (results) {
+
+        parsed_opts_url = url.parse(opts.url);
+
+        linkScanner(body, parsed_opts_url, function (results) {
             graph_json = {
                 url: opts.url,
                 depth: opts.depth,
@@ -229,6 +193,9 @@ function crawl(opts, callback, temp) {
     });
 }
 
+module.exports = {
+    crawl: crawl
+}
 
 ////////////////////////////////////////////////
 // Init

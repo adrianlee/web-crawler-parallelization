@@ -226,6 +226,7 @@ if (cluster.isMaster) {
             console.log("Start Time(ms): \t\t" + start_time.getTime());
             console.log("Start Time(ms): \t\t" + end_time.getTime());
             console.log("Total Time(ms): \t\t" + (end_time.getTime() - start_time.getTime()).toString());
+            node_traversed = 0;
           }
         }
       });

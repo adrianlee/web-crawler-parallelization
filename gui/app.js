@@ -13,6 +13,8 @@ var express = require('express'),
     crypto = require('crypto');
 
 
+io.set('log level', 1)
+
 ////////////////////////////////////////////////
 // Redis Configuration
 ////////////////////////////////////////////////
@@ -25,7 +27,7 @@ redis_subscriber.on("error", function (err) {
 });
 
 redis_subscriber.on("message", function (channel, message) {
-    console.log("channel " + channel + ": " + message);
+    // console.log("channel " + channel + ": " + message);
     io.sockets.emit('data', message);
 });
 
@@ -93,13 +95,23 @@ app.post('/start', function(req, res) {
     res.send(200);
 });
 
-app.get('/generator/:links', function(req, res) {
+app.get('/generator/:links/:hash', function(req, res) {
     var i,
+        uuid,
         body = "";
 
+    uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+
+    body += "<div id='bodyContent'>";
+
     for (i=0; i < parseInt(req.params.links); i++) {
-        body += "<a href=\"/generator/" + req.params.links + "/\">link</a></br>";
+        body += "<a href=\"/generator/" + req.params.links + "/" + uuid + "\">link</a></br>";
     }
+
+    body += "</div>";
 
     res.send(200, body);
 });

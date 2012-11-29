@@ -34,8 +34,8 @@ path.link {
 <script type="text/javascript">
 
 var margin = {top: 20, right: 120, bottom: 20, left: 30},
-    width = 1280 - margin.right - margin.left,
-    height = document.height,
+    width = 6000,
+    height = 10280-9500,
     i = 0,
     duration = 0,
     root;
@@ -69,40 +69,28 @@ var vis = d3.select("#chart").append("svg")
 //   update(root);
 // });
 
-// root = {
-//   name: "root",
-//   children: [
-//     {
-//       name: "Adrian",
-//       children: [
-//         {
-//           name: "Joshua"
-//         },
-//         {
-//           name: "Charlotte"
-//         }
-//       ]
-//     },
-//     {
-//       name: "Jessie",
-//       children: [
-//       ]
-//     }
-//   ]
-// };
+root = {
+  name: "root",
+  children: [
+
+  ]
+};
 
 update(root);
+
+var root_reverse;
 
 function update(source) {
   // Compute the new tree layout.
   // console.log(root);
 
-  var nodes = tree.nodes(root).reverse();
+  var nodes = tree.nodes(root);
+  asd = nodes = nodes.reverse();
   // var nodes = tree.nodes(root);
 
 
   // Normalize for fixed-depth.
-  nodes.forEach(function(d) { d.y = d.depth * 180; });
+  nodes.forEach(function(d) { d.y = d.depth * 150; });
 
   // Update the nodes…
   var node = vis.selectAll("g.node")
@@ -184,22 +172,74 @@ function update(source) {
 
 // Toggle children on click.
 function click(d) {
-  if (d.children) {
-    d._children = d.children;
-    d.children = null;
-  } else {
-    d.children = d._children;
-    d._children = null;
-  }
-  update(d);
+  // if (d.children) {
+  //   d._children = d.children;
+  //   d.children = null;
+  // } else {
+  //   d.children = d._children;
+  //   d._children = null;
+  // }
+  // update(d);
+
+  console.log(d);
 }
 </script>
 
 <script>
 var socket = io.connect("http://localhost");
 socket.on('data', function (data) {
-  console.log(data);
-  root.children.push({name: data});
+  console.log("new data!");
+  // console.log(asd);
+  try {
+    var o = JSON.parse(data);
+    // console.log(o);
+    for (var i in o) {
+      // console.log(o[i].msg);
+      if (asd[0].name == "root") {
+
+        var omg = {
+          name: o[i].msg.name,
+          uuid: o[i].uuid,
+          depth: o[i].msg.depth,
+          uuid: o[i].uuid,
+          parent_uuid: o[i].msg.parent_uuid,
+          start_time: o[i].msg.time_start,
+          end_time: o[i].msg.time_end,
+          children: []
+        };
+
+        asd[0].children.push(omg);
+      } else {
+        for (var j in asd) {
+          var parent = asd[j];
+          // console.log(o[i]);
+          // if (asd[j].depth == (o[i].msg.depth - 1)) {
+            // console.log(parent.uuid + " " + o[i].parent_uuid);
+            if (parent.uuid && o[i].msg.parent_uuid && (parent.uuid == o[i].msg.parent_uuid)) {
+
+              var omg = {
+                name: o[i].msg.name,
+                uuid: o[i].uuid,
+                depth: o[i].msg.depth,
+                uuid: o[i].uuid,
+                parent_uuid: o[i].msg.parent_uuid,
+                start_time: o[i].msg.time_start,
+                end_time: o[i].msg.time_end,
+                children: []
+              };
+
+              parent.children.push(omg);
+            }
+          // }
+        }
+      }
+    }
+  } catch(e) {
+    console.log(e);
+  }
+  // root.children.push({name: data});
+  // root = o;
+
   update(root);
 });
 
@@ -207,13 +247,14 @@ $("#go").click(function() {
     // console.log("POST: /start");
     var textArea = $("#link").val();
 
-    root = {
-      url: textArea,
-      name: textArea,
-      depth: 0
-    };
+    // root = {
+    //   url: textArea,
+    //   name: textArea,
+    //   depth: 0,
+    //   children: []
+    // };
 
-    update(root);
+    // update(root);
 
     $.ajax({
         type: "POST",

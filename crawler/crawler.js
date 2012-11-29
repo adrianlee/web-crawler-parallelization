@@ -11,7 +11,7 @@ var start_link = "http://en.wikipedia.org/wiki/Nintendo";
 ////////////////////////////////////////////////
 // Crawler Methods
 ////////////////////////////////////////////////
-function linkScanner(body, parentUrl, callback) {
+function linkScanner(body, parentUrl, worker_id, callback) {
     var results = [],
         $ = cheerio.load(body),
         i,
@@ -25,7 +25,7 @@ function linkScanner(body, parentUrl, callback) {
 
     tag_a = $("a");
 
-    console.log(tag_a.length + " links parsed");
+    console.log("Worker #" + worker_id + ": " + tag_a.length + " links parsed");
 
     for (i = 0; i < tag_a.length; i++) {
         if (results.length < config.max_children) {
@@ -35,8 +35,12 @@ function linkScanner(body, parentUrl, callback) {
                 var checkInternal = url.parse(tag_a[i].attribs.href);
 
                 if (!checkInternal.protocol && config.allow_internal_links) {
-                    console.log(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
-                    results.push(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
+                    // console.log(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
+                    if (parentUrl.hostname == "localhost") {
+                        results.push(parentUrl.protocol+ "//localhost:8080" + tag_a[i].attribs.href);
+                    } else {
+                        results.push(parentUrl.protocol+ "//" + path.join(parentUrl.hostname, tag_a[i].attribs.href));
+                    }
                 } else {
                     results.push(tag_a[i].attribs.href);
                 }
@@ -136,11 +140,12 @@ function validateLink(link) {
 
 function getBody(opts, callback) {
     // Send GET request to link.
+
     var options = {
         url: opts.url
     };
 
-    console.log(opts);
+    // console.log(opts);
 
     request.get(options, function (error, response, body) {
         var status = 0;
@@ -162,7 +167,7 @@ function getBody(opts, callback) {
     });
 }
 
-function crawl(opts, callback, temp) {
+function crawl(opts, callback, worker_id) {
     var graph_json = {},
         time_start = new Date().getTime(),
         time_end,
@@ -175,20 +180,24 @@ function crawl(opts, callback, temp) {
         }
 
         // Scan links
-        console.log("Scanning links from " + opts.url);
+        // console.log(opts);
+        console.log("Worker #" + worker_id + ": Scanning links from " + opts.url);
 
         parsed_opts_url = url.parse(opts.url);
 
-        linkScanner(body, parsed_opts_url, function (results) {
+        linkScanner(body, parsed_opts_url, worker_id, function (results) {
             graph_json = {
                 url: opts.url,
+                uuid: opts.uuid,
+                name: parsed_opts_url.path,
+                parent_uuid: opts.parent_uuid,
                 depth: opts.depth,
                 time_start: time_start,
                 time_end: new Date().getTime(),
                 children: results
             };
 
-            callback(graph_json, temp);
+            callback(graph_json);
         });
     });
 }

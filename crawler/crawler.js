@@ -4,10 +4,6 @@ var url = require('url'),
     cheerio = require('cheerio'),
     config = require('../config');
 
-var start_link = "http://adrianlee.ca";
-var start_link = "http://hksn.ca";
-var start_link = "http://en.wikipedia.org/wiki/Nintendo";
-
 ////////////////////////////////////////////////
 // Crawler Methods
 ////////////////////////////////////////////////
@@ -162,7 +158,7 @@ function getBody(opts, callback) {
             callback(null, body);
         } else {
             // Log response
-            callback("Response " + status + " from " + link);
+            callback("Response " + status + " from " + options.url);
         }
     });
 }
@@ -180,7 +176,6 @@ function crawl(opts, callback, worker_id) {
         }
 
         // Scan links
-        // console.log(opts);
         console.log("Worker #" + worker_id + ": Scanning links from " + opts.url);
 
         parsed_opts_url = url.parse(opts.url);
@@ -205,27 +200,3 @@ function crawl(opts, callback, worker_id) {
 module.exports = {
     crawl: crawl
 }
-
-////////////////////////////////////////////////
-// Init
-////////////////////////////////////////////////
-
-
-// crawl(start_link, function(graph_json) {
-//     var i,
-//         counter = 0;
-
-//     // console.log(graph_json);
-
-//     for (i = 0; i < graph_json.children.length; i++) {
-//         crawl("http://en.wikipedia.com" + graph_json.children[i], function (json, temp) {
-//             graph_json.children[temp] = json;
-//             counter++;
-//             if (counter >= graph_json.children.length) {
-//                 console.log(graph_json);
-//                 // redis_client.publish("data", "inside", redis.print);
-//             }
-//         }, i);
-//     }
-// }, null);
-

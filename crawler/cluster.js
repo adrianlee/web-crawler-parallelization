@@ -5,14 +5,17 @@ var cluster = require('cluster'),
     worker = [];
 
 if (cluster.isMaster) {
+  ////////////////////////////////////////////////
+  // Master
+  ////////////////////////////////////////////////
   var redis = require("redis"),
       redis_publisher = redis.createClient(),
       redis_subscriber = redis.createClient(),
       emitter = new (require('events').EventEmitter),
-      current_depth = 0,
       async = require("async"),
       start_time,
       end_time,
+      current_depth = 0,
       node_traversed = 0;
 
   ////////////////////////////////////////////////
@@ -41,13 +44,8 @@ if (cluster.isMaster) {
   redis_subscriber.on("message", function (channel, message) {
       var response_body;
 
-      // console.log("channel " + channel + ": " + message);
       try {
           response_body = JSON.parse(message);
-
-          // crawler.crawl(response_body, function(graph_json) {
-          //     console.log(graph_json);
-          // });
           current_depth = 0;
           scheduler(response_body);
       } catch(e) {
@@ -65,7 +63,7 @@ if (cluster.isMaster) {
   ////////////////////////////////////////////////
   function messageHandler(msg) {
     var parsed;
-    // console.log("master: " + msg);
+
     try {
       parsed = JSON.parse(msg);
       node_traversed++;
@@ -109,12 +107,12 @@ if (cluster.isMaster) {
 
   function scheduler(opts) {
     var i,
+        q,
         worker,
         results,
         uuid;
 
-    var q = async.queue(function (task, callback) {
-
+    q = async.queue(function (task, callback) {
       while (true) {
         worker = getWorker();
 
@@ -131,59 +129,47 @@ if (cluster.isMaster) {
 
     q.drain = function() {
       console.log('all items have been processed');
-    }
+    };
 
-    // console.log(opts);
     console.log("Current Depth " + current_depth);
 
     if (current_depth === 0) {
+      // Root Node
       start_time = new Date();
       worker = getWorker();
 
       if (worker) {
-        // worker.working = true;
         uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
             return v.toString(16);
         });
 
-        // opts.uuid = uuid;
-
         worker.send(JSON.stringify({ uuid: uuid, msg: opts }));
       }
 
-      // emitter.addListener('abc', function () {
-      //   console.log('asd');
-      // });
-
       emitter.once(uuid, function (msg) {
-        // console.log(msg);
         results = msg.msg;
         current_depth++;
-        // root = results;
-        // console.log(root);
-        // console.log(results);
         scheduler(results);
-        // console.log("asd");
       });
 
 
     } else {
+      // All other nodes
       var task_array = [],
           result_array = [],
           counter = 0;
 
+      // Make sure input is an Array
       if( Object.prototype.toString.call( opts ) === '[object Array]' ) {
         // console.log( 'Array!' );
       } else {
-        // console.log( 'Not Array!' );
         opts = [{uuid: 0, msg: opts}];
       }
 
       for (var node in opts) {
-        // console.log(opts[node].msg);
+        // Push each children to task queue
         for (i=0; opts[node].msg.children && (i < opts[node].msg.children.length); i++) {
-
           uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
               var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
               return v.toString(16);
@@ -196,16 +182,13 @@ if (cluster.isMaster) {
         }
       }
 
-      console.log("task_array");
-      // console.log(task_array);
-
+      // Push task queue to worker queue for processing
       q.push(task_array, function (msg) {
         counter++;
         result_array.push(msg);
         if (counter >= task_array.length) {
           current_depth++;
-          // root.children = result_array;
-          // console.log(result_array);
+
           redis_publisher.publish("data", JSON.stringify(result_array));
 
           if (current_depth <= config.max_depth) {
@@ -233,23 +216,20 @@ if (cluster.isMaster) {
     }
   }
 
-  // setTimeout(function () {
-  //   scheduler({ url: 'http://en.wikipedia.org/wiki/Nintendo' });
-  // }, 2000);
-
 } else {
   ////////////////////////////////////////////////
   // Worker
   ////////////////////////////////////////////////
   process.on('message', function(msg) {
-    // console.log(cluster.worker.id  + ": " + msg);
     try {
       var o = JSON.parse(msg);
-      // console.log(o);
     } catch(e) {
       console.log(e);
     }
+
+    // Crawl!
     crawler.crawl(o.msg, function(json) {
+      // Message pass results to Master
       process.send(JSON.stringify({ worker: cluster.worker.id, uuid: o.uuid, msg: json })); // not ideal but for prototype
     }, cluster.worker.id)
   });

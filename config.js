@@ -14,7 +14,7 @@ module.exports = {
     max_depth: 10,
 
     // # of Workers to spawn
-    num_processes: 10,
+    num_processes: 4,
 
     // For wikipedia sites
     wiki_bodyContent_only: true

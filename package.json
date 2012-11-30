@@ -1,9 +1,9 @@
 {
-  "name": "application-name",
+  "name": "ecse420-web-crawler",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "node app"
+    "start": "node crawler/cluster.js"
   },
   "dependencies": {
     "express": "*",

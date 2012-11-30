@@ -2,8 +2,8 @@ Understanding the Parallelization Process via Web Crawling
 
 Web Crawler Configurables
 -
-- # of Parallel Processes
-- # of Links per Page to Visit
+- # of Parallel Workers
+- # of Links to Visit per Page 
 - Traversal Depth
 - Visit External and/or Internal Links
 

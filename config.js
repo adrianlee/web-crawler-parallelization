@@ -8,7 +8,7 @@ module.exports = {
     allow_internal_links: true,
 
     // Max # of links to parse per page
-    max_children: 10,
+    max_children: 2,
 
     // Max tree height
     max_depth: 10,

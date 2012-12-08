@@ -19,3 +19,11 @@ How to run
 - `$ node gui/app.js`
 - Access the GUI via web browser to the following address: [http://localhost:8080](http://localhost:8080)
 - Enter a URL in the GUI input and hit *Start* in GUI!
+
+
+Screenshots
+-
+![](https://raw.github.com/adrianlee/web-crawler-parallelization/master/screenshot_console.png)
+
+
+![](https://raw.github.com/adrianlee/web-crawler-parallelization/master/screenshot_gui_many_links.png)
